@@ -1,0 +1,86 @@
+---
+title: "Regression Models Course Progect"
+output: pdf_document
+---
+
+#Summary
+THis analysis was written for Motor Trend, a magazine about the automobile industry, to answer the main question, if an automatic or manual transmission better for car fuel consumption. The study could not determine the answer to the question, as all multivariate models showed the insignificance of the transmission variable.
+
+# Loading and Processing Data
+
+First, load required libraries, download dataset and consider its stucture.
+
+```{r message=FALSE}
+library(tidyverse)
+data("mtcars")
+```
+
+From the structure (Appendix 1) we can see, that all the data is represented as numeric variables, although some of it should be factors. Since this is important for the regression model, change types and define levels for transmission variable (am).
+
+```{r message=FALSE}
+mtcars<- mutate(mtcars,  cyl=as.factor(cyl), vs=as.factor(vs), gear=as.factor(gear),
+                am=factor(mtcars$am,labels = c("automatic","manual")), carb=as.factor(carb))
+```
+# Exploratory analysis
+
+Briefly explore relationship between transmition and fuel consumption: build a Boxplot and the summary table (Appendix 2) 
+
+If we'd make a conclusion about the relationship of these two variables without taking into account the other variables from dataset, then data show a significantly greater efficiency of the cars with manual transmission over automatic.
+
+# Regression analysis
+
+Initially made simple model relation fuel consumption (mpg) to transmission type (am).
+
+```{r message=FALSE}
+fit<-lm(mpg~am,mtcars)
+summary(fit)$coefficients
+summary(fit)$adj.r.squared
+```
+
+This model confirms conclusions from Exploratory analysis: coefficient of the manual transmission significantly greater than zero, p-value is 0.00029. But since adjasted r2 is relatively small, then check another models with several variables.
+
+Lets try model that includes all variables from dataset (Appendix 3)
+
+```{r message=FALSE}
+fit2<-lm(mpg~.,mtcars)
+```
+Here coefficient of manual transmission retain its sign, but now it very insignificant, with p-value 0.7. This model has grater adjasted r2 (compared with the first model), but noticeably overfitted (among 17 variables there are not any significant). So lets try another model with fewer variables, to avoid possible collinearity as the reason of high p-value of **am** variable. In the second model the most significant variables were horsepower and weight, so include in the next model these variables + transmission variable.
+
+```{r message=FALSE}
+fit3<-lm(mpg~hp+wt+am,mtcars)
+summary(fit3)$coefficients
+summary(fit3)$adj.r.squared
+```
+Third model has the biggest adjasted r2 (0.82), but transmission variabe ia also insignificant.
+
+# Residuals diagnostic
+Let's build standard residuals plots 
+
+All residuals grafs looks nomal since there is no pattern in the model in fitted vs residuals plot, normal q-q close to theoritical quantiles and there is not sign of geteroscedasticity in fitted vs standardized residuals.
+
+# Conclusion
+1. Since  the variable did not show significance in all multivariate models, we can not determine which transmission better for MPG.
+2. On average, manual transmission gives +1-2 miles per galon, but confidence interval with alpha = 0.05 includes 0.
+
+#Appendix
+1. Sructure of dataset
+```{r message=FALSE}
+str(mtcars)
+```
+2. Eploratory analysis
+```{r message=FALSE,fig.height=3.5}
+ggplot(mtcars, aes(am, mpg))+geom_boxplot()+geom_point()+xlab("Transmission")+ylab("Miles/(US) gallon")
+group_by(mtcars,am) %>% summarise(mean=mean(mpg), min=min(mpg), max = max(mpg), sd=sd(mpg))
+```
+
+3. Model 2
+```{r message=FALSE}
+fit2<-lm(mpg~.,mtcars)
+summary(fit2)$coefficients
+summary(fit2)$adj.r.squared
+```
+4. Residuals plots
+```{r message=FALSE}
+par(mfrow = c(2,2))
+plot(fit3)
+```
